@@ -1,0 +1,15 @@
+{
+    "name": "componentsforyii2/extension",
+    "type": "library",
+    "description":"YII2基础组件封装",
+    "require": {
+        "yiisoft/yii2": "^2.0.6"
+    },
+    "authors": [
+        {
+            "name": "Yuanshuai",
+            "email": "yuanshuai@mybns.s.cn"
+        }
+    ],
+    "minimum-stability": "dev"
+}
