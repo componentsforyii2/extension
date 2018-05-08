@@ -30,7 +30,7 @@ class MutexCache extends Mutex
 
     protected function acquireLock($name,$timeout = 0)
     {
-        return $this->cache->add($name,$timeout);
+        return $this->cache->add($name,1,$timeout);
     }
 
     protected function releaseLock($name)
