@@ -33,12 +33,14 @@ class FileHelper extends BaseFileHelper
     public static $filePath = "/upload/{:module}/{:Y}/{:M}/{:D}/{:name}.{:ext}";
     public static $cdnDomain = "@storageUrl";
     public static $module = "";
+    public static $fileSize = null;
 
     /**
      * @param string $name
      * @param string $path
      * @param Model $model
      * @return array|bool
+     * @throws
      */
     public static function upload($name,$path=null,$model = null)
     {
@@ -48,12 +50,14 @@ class FileHelper extends BaseFileHelper
             $file = UploadedFile::getInstanceByName($name);
         }
         if (empty($file)) {
-            return false;
+            return ["result"=>false,"message"=>"上传失败"];
         }
         if ($file->getHasError()) {
-            return false;
+            return ["result"=>false,"message"=>"上传失败"];
         }
-        \Yii::warning($file);
+        if ($file->size > static::$fileSize) {
+            return ["result"=>false,"message"=>"图片超过大小限制"];
+        }
         if (is_null($path)) {
             $path = static::getPath($file->getExtension());
         }else{
@@ -69,12 +73,13 @@ class FileHelper extends BaseFileHelper
         $filePath = strtr($path,[\Yii::getAlias(static::$basePath)=>""]);
         self::_uploadToOss($path);
         if (!$result) {
-            return false;
+            return ["result"=>false,"message"=>"上传失败"];
         }
         if (env("TENCENT_COS_OPEN",false)) {
             $data = \Yii::$app->cos->upload($path,$filePath);
         }
         $data = [
+            "result"=>true,
             "filepath"=>$filePath,
             "fileurl"=>static::getCdnDomain($filePath),
             "filename"=>basename($path),
@@ -92,6 +97,7 @@ class FileHelper extends BaseFileHelper
      * @param $fileType
      * @param $path
      * @return boolean|array
+     * @throws
      */
     public static function uploadByBase64($base64Data,$fileName,$fileType,$path = null)
     {
@@ -113,8 +119,12 @@ class FileHelper extends BaseFileHelper
         if ($result) {
             $filePath = strtr($path, [\Yii::getAlias(static::$basePath) => ""]);
             $filesize = filesize($path);
+            if ($filesize > static::$fileSize) {
+                return ["result"=>false,"message"=>"图片大小超过限制"];
+            }
             self::_uploadToOss($path);
             $data = [
+                "result"=>true,
                 "filepath" => $filePath,
                 "fileurl" => static::getCdnDomain($filePath),
                 "filename" => basename($path),
@@ -124,7 +134,7 @@ class FileHelper extends BaseFileHelper
             ];
             return $data;
         }
-        return false;
+        return ["result"=>false,"message"=>"上传错误"];
     }
 
     private static function _uploadToOss($path)
